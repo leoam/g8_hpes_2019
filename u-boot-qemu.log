@@ -1,0 +1,27 @@
+loriaga@gabriel-vm:~/Downloads/u-boot-2016.11$ qemu-system-arm -machine vexpress-a9 -nographic -no-reboot -kernel u-boot
+pulseaudio: set_sink_input_volume() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_sink_input_mute() failed
+pulseaudio: Reason: Invalid argument
+
+
+U-Boot 2016.11 (Jun 14 2019 - 16:29:41 -0600)
+
+DRAM:  128 MiB
+WARNING: Caches not enabled
+Flash: 128 MiB
+MMC:   MMC: 0
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+Net:   smc911x-0
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> reset
+resetting ...
+loriaga@gabriel-vm:~/Downloads/u-boot-2016.11$ 
+
