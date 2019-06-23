@@ -2,6 +2,7 @@
 #include <getopt.h>
 
 //Converter from RGB to YUV
+//Ejemplo tomado de Internet
 void pixel_rgb_to_yuyv (rgb_t * rgb_pixel, yuyv_t * yuyv_pixel)
 {
 	unsigned int pR, pG, pB;
@@ -20,6 +21,7 @@ void pixel_rgb_to_yuyv (rgb_t * rgb_pixel, yuyv_t * yuyv_pixel)
 }
 
 //Convertidor
+//Tomado de Internet intentando tropicalizar.
 void rgb2yuv() {
 	//Faltan inicio y variables
 	for(int i = 0, j=0; i < 1280 * 720 * 3; i+=6, j+=4)
@@ -34,10 +36,31 @@ void rgb2yuv() {
 	//Falta salida
 }
 
-void rgb2yuv444() {
+//A implementar basado en ejemplo anterior, adaptando para YUV444.
+void rgb2yuv444( w, h, R, B, G) {
+	/* w is width in pixels of the image.
+	   h is height in pixels of the image.
+	   R is data for Red.
+	   B is data for Blue
+	   G is data for Green
+	   */
 	
-
-
+	int Y, U, V;
+	int i, j;
+	int r, g, b;
+	for (i=0, i < w * h * 3; i+=3)
+	{
+		//Pendiente revisar si los i son correctos para los colores (i.e. si para rojo es i, i+1 o i+2)
+		r = i;
+		g = i+1;
+		b = i+2;
+		Y[i] = 0.299 * R[r] + 0.587 * G[g] + 0.114 * B[b];
+		U[i[ = -0.147 * R[r] - 0.289 * G[g] + 0.436 * B[b];
+		V[i[ = 0.615 * R[r] - 0.515 * G[g] - 0.100 * B[b];
+		}
+	}
+			
+// Main formula with options.  Sientanse libres de agregar comentarios, sobre todo en la parte de help.
 void main( int argc, char **argv) {
 	int option_index = 0;
 	char *user_name = NULL;
