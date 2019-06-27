@@ -177,7 +177,6 @@ int rgb2yuv(char *input_img_name, char *output_img_name){
 	}
 
 	input.close();
-	output.write(output_pixels, sizeof(output_pixels));
 	output.close();
 
 	return 0;
