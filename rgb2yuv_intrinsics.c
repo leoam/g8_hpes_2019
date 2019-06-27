@@ -1,239 +1,210 @@
-#include <stdio.h>
-#include <getopt.h>
 #include <stdlib.h>
-#include <time.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <iostream>
 #include <fstream>
+#include <string.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include <arm_neon.h>
+
 using namespace std;
 
-int rgb2yuv (file, out_file_name, *arr)
+// RGB pixel struct
+struct RGB
 {
-	uint16_t w = 640;
-	uint16_t h = 480;
-	uint32_t n = w * h * 3;
-	uint8x3_t Y[], U[], V[];
-	int i, j;
-	int r, g, b;
-	int RGB[], YUV[];
-	RGB[] = file;
-	
-	for (i=0; i < n; i+=1)
-	{
-		//Pendiente revisar si los i son correctos para los colores (i.e. si para rojo es i, i+1 o i+2)
-		r = 3*(i);
-		g = 3*(i)+1;
-		b = 3*(i)+2;
-		Y[i] = 0.299 * RGB[r] + 0.587 * RGB[g] + 0.114 * RGB[b];
-		U[i] = -0.147 * RGB[r] - 0.289 * RGB[g] + 0.436 * RGB[b];
-		V[i] = 0.615 * RGB[r] - 0.515 * RGB[g] - 0.100 * RGB[b];
-		YUV[3*i] = U[i];
-		YUV[3*i+1] = Y[i];
-		YUV[3*i+2] = V[i];
-		
-		
+	unsigned char R;
+	unsigned char G;
+	unsigned char B;
+};
+
+// YUV pixel struct
+struct YUV
+{
+	float32_t Y;
+	float32_t U;
+	float32_t V;
+};
+
+int menu( int argc, char **argv, char **in_file, char **out_file){
+	int option_index = 0;
+	*in_file = NULL;
+	*out_file = NULL;
+	while (( option_index = getopt(argc, argv, "i:o:ha")) != -1){
+		switch (option_index) {
+			case 'i':
+				*in_file = optarg;
+				printf("RGB file name: %s\n", optarg);
+				break;
+			case 'o':
+				*out_file = optarg;
+				printf("YUV file name: %s\n", optarg);
+				break;
+			case 'a':
+				printf("Authors of the program:\n\tLeonardo Araya\n\tGabriel Loria\n\tAlvaro Salazar\n");
+				break;
+			case 'h':
+				printf("Use '-i RGBfile' where RGBfile is the name of the file in RGB "
+				"format to convert [REQUIRED].\nUse '-o YUVfile' where YUVfile is the "
+				"name of the output file in YUV format [REQUIRED].\nUse '-a' to display "
+				"information of the author of the program.\nUse '-h' to display this "
+				"help guide.\n");
+				return 1;
+				break;
+			default:
+				printf("Not recognized option. Please use '-h' for help.\n");
+				return 1;
 		}
-	
-	
-		
-	float F[]=fopen(out_file_name, "w");
-	float fclose(out_file_name);
-	//float fclose(F[]);
+	}
+	return 0;
 }
 
-void RGB2YUV444_neon<Strategies::NEON_INTRINSICS>(unsigned char * __restrict__ yuv, unsigned char * __restrict__ rgb, const int pixel_num, const int rgbChannelNum)
-        {
-            const uint8x8_t u8_zero = vdup_n_u8(0);
-            const uint16x8_t u16_rounding = vdupq_n_u16(128);
-            const int16x8_t s16_rounding = vdupq_n_s16(128);
-            const int8x16_t s8_rounding = vdupq_n_s8(128);
+// Function that converts a pixel from RGB to YUV format
+int pixel_rgb2yuv(struct RGB rgb, struct YUV *yuv){
+	float32_t const_1;
+	float32_t const_2;
+	float32x2_t tmp_1;
+	float32x2_t tmp_2;
+	float32x2_t tmp_3;
+	float32x2_t tmp_4;
 
-            int count = pixel_num / 16;
+	// --------------------------------------------------------------------------
+	// Generate the Y
+	// yuv->Y = rgb.R * .299000 + rgb.G * .587000 + rgb.B * .114000;
+	// --------------------------------------------------------------------------
+	const_1 = 0.299000;
+	const_2 = rgb.R;
+	tmp_1 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-            int i;
-            for (i = 0; i < count; ++i) {
-                // Load rgb
-                uint8x16x3_t pixel_rgb;
-                //if (rgbChannelNum == 3) {
-                    pixel_rgb = vld3q_u8(rgb);
-                /*} else {
-                    uint8x16x4_t pixel_argb = vld4q_u8(rgb);
-                    pixel_rgb.val[0] = pixel_argb.val[0];
-                    pixel_rgb.val[1] = pixel_argb.val[1];
-                    pixel_rgb.val[2] = pixel_argb.val[2];
-                }*/
-                rgb += rgbChannelNum * 16;
+	const_1 = 0.587000;
+	const_2 = rgb.G;
+	tmp_2 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                uint8x8_t high_r = vget_high_u8(pixel_rgb.val[2]);
-                uint8x8_t low_r = vget_low_u8(pixel_rgb.val[2]);
-                uint8x8_t high_g = vget_high_u8(pixel_rgb.val[1]);
-                uint8x8_t low_g = vget_low_u8(pixel_rgb.val[1]);
-                uint8x8_t high_b = vget_high_u8(pixel_rgb.val[0]);
-                uint8x8_t low_b = vget_low_u8(pixel_rgb.val[0]);
-                int16x8_t signed_high_r = vreinterpretq_s16_u16(vaddl_u8(high_r, u8_zero));
-                int16x8_t signed_low_r = vreinterpretq_s16_u16(vaddl_u8(low_r, u8_zero));
-                int16x8_t signed_high_g = vreinterpretq_s16_u16(vaddl_u8(high_g, u8_zero));
-                int16x8_t signed_low_g = vreinterpretq_s16_u16(vaddl_u8(low_g, u8_zero));
-                int16x8_t signed_high_b = vreinterpretq_s16_u16(vaddl_u8(high_b, u8_zero));
-                int16x8_t signed_low_b = vreinterpretq_s16_u16(vaddl_u8(low_b, u8_zero));
+	const_1 = 0.114000;
+	const_2 = rgb.B;
+	tmp_3 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                // NOTE:
-                // declaration may not appear after executable statement in block
-                uint16x8_t high_y;
-                uint16x8_t low_y;
-                uint8x8_t scalar = vdup_n_u8(76);
-                int16x8_t high_u;
-                int16x8_t low_u;
-                int16x8_t signed_scalar = vdupq_n_s16(-43);
-                int16x8_t high_v;
-                int16x8_t low_v;
-                uint8x16x3_t pixel_yuv;
-                int8x16_t u;
-                int8x16_t v;
+	tmp_4 = vadd_f32(tmp_1, tmp_2);
+	tmp_4 = vadd_f32(tmp_4, tmp_3);
 
-                // 1. Multiply transform matrix (Y′: unsigned, U/V: signed)
-                high_y = vmull_u8(high_r, scalar);
-                low_y = vmull_u8(low_r, scalar);
+	// Get the value from the vector
+	vst1_f32(&(yuv->Y), tmp_4);
 
-                high_u = vmulq_s16(signed_high_r, signed_scalar);
-                low_u = vmulq_s16(signed_low_r, signed_scalar);
+	// --------------------------------------------------------------------------
+	// Generate the U
+	// yuv->U = rgb.R * -.168736 + rgb.G * -.331264 + rgb.B * .500000 + 128;
+	// --------------------------------------------------------------------------
+	const_1 = -0.168736;
+	const_2 = rgb.R;
+	tmp_1 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                signed_scalar = vdupq_n_s16(127);
-                high_v = vmulq_s16(signed_high_r, signed_scalar);
-                low_v = vmulq_s16(signed_low_r, signed_scalar);
+	const_1 = -0.331264;
+	const_2 = rgb.G;
+	tmp_2 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                scalar = vdup_n_u8(150);
-                high_y = vmlal_u8(high_y, high_g, scalar);
-                low_y = vmlal_u8(low_y, low_g, scalar);
+	const_1 = 0.500000;
+	const_2 = rgb.B;
+	tmp_3 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
+	const_1 = 128;
+	tmp_3 = vadd_f32(tmp_3, vld1_dup_f32(&const_1));
 
-                signed_scalar = vdupq_n_s16(-84);
-                high_u = vmlaq_s16(high_u, signed_high_g, signed_scalar);
-                low_u = vmlaq_s16(low_u, signed_low_g, signed_scalar);
+	tmp_4 = vadd_f32(tmp_1, tmp_2);
+	tmp_4 = vadd_f32(tmp_4, tmp_3);
 
-                signed_scalar = vdupq_n_s16(-106);
-                high_v = vmlaq_s16(high_v, signed_high_g, signed_scalar);
-                low_v = vmlaq_s16(low_v, signed_low_g, signed_scalar);
+	// Get the value from the vector
+	vst1_f32(&(yuv->U), tmp_4);
 
-                scalar = vdup_n_u8(29);
-                high_y = vmlal_u8(high_y, high_b, scalar);
-                low_y = vmlal_u8(low_y, low_b, scalar);
+	// --------------------------------------------------------------------------
+	// Generate the V
+	// yuv->V = rgb.R * .500000 + rgb.G * -.418688 + rgb.B * -.081312 + 128;
+	// --------------------------------------------------------------------------
+	const_1 = 0.500000;
+	const_2 = rgb.R;
+	tmp_1 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                signed_scalar = vdupq_n_s16(127);
-                high_u = vmlaq_s16(high_u, signed_high_b, signed_scalar);
-                low_u = vmlaq_s16(low_u, signed_low_b, signed_scalar);
+	const_1 = -0.418688;
+	const_2 = rgb.G;
+	tmp_2 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
 
-                signed_scalar = vdupq_n_s16(-21);
-                high_v = vmlaq_s16(high_v, signed_high_b, signed_scalar);
-                low_v = vmlaq_s16(low_v, signed_low_b, signed_scalar);
-                // 2. Scale down (">>8") to 8-bit values with rounding ("+128") (Y′: unsigned, U/V: signed)
-                // 3. Add an offset to the values to eliminate any negative values (all results are 8-bit unsigned)
+	const_1 = -0.081312;
+	const_2 = rgb.B;
+	tmp_3 = vmul_f32(vld1_dup_f32(&const_2), vld1_dup_f32(&const_1));
+	const_1 = 128;
+	tmp_3 = vadd_f32(tmp_3, vld1_dup_f32(&const_1));
 
-                high_y = vaddq_u16(high_y, u16_rounding);
-                low_y = vaddq_u16(low_y, u16_rounding);
+	tmp_4 = vadd_f32(tmp_1, tmp_2);
+	tmp_4 = vadd_f32(tmp_4, tmp_3);
 
-                high_u = vaddq_s16(high_u, s16_rounding);
-                low_u = vaddq_s16(low_u, s16_rounding);
+	// Get the value from the vector
+	vst1_f32(&(yuv->V), tmp_4);
 
-                high_v = vaddq_s16(high_v, s16_rounding);
-                low_v = vaddq_s16(low_v, s16_rounding);
-
-                pixel_yuv.val[0] = vcombine_u8(vqshrn_n_u16(low_y, 8), vqshrn_n_u16(high_y, 8));
-
-                u = vcombine_s8(vqshrn_n_s16(low_u, 8), vqshrn_n_s16(high_u, 8));
-
-                v = vcombine_s8(vqshrn_n_s16(low_v, 8), vqshrn_n_s16(high_v, 8));
-
-                u = vaddq_s8(u, s8_rounding);
-                pixel_yuv.val[1] = vreinterpretq_u8_s8(u);
-
-                v = vaddq_s8(v, s8_rounding);
-                pixel_yuv.val[2] = vreinterpretq_u8_s8(v);
-
-                // Store
-                vst3q_u8(yuv, pixel_yuv);
-
-                yuv += 3 * 16;
-            }
-
-            // Handle leftovers
-            for (i = count * 16; i < pixel_num; ++i) {
-                uint8_t r = rgb[i * rgbChannelNum + 2];
-                uint8_t g = rgb[i * rgbChannelNum + 1];
-                uint8_t b = rgb[i * rgbChannelNum + 0];
-
-                uint16_t y_tmp = 76 * r + 150 * g + 29 * b;
-                int16_t u_tmp = -43 * r - 84 * g + 127 * b;
-                int16_t v_tmp = 127 * r - 106 * g - 21 * b;
-
-                y_tmp = (y_tmp + 128) >> 8;
-                u_tmp = (u_tmp + 128) >> 8;
-                v_tmp = (v_tmp + 128) >> 8;
-
-                yuv[i * 3] = (uint8_t) y_tmp;
-                yuv[i * 3 + 1] = (uint8_t) (u_tmp + 128);
-                yuv[i * 3 + 2] = (uint8_t) (v_tmp + 128);
-            }
-        }
-
-			
-// Main formula with options.  Sientanse libres de agregar comentarios, sobre todo en la parte de help.
-int main( int argc, char **argv) {
-	clock_t begin = clock();  //Inicio contador de tiempo
-	
-	{
-		size = file.tellg();
-    	memblock = new char [size];
-    	file.seekg (0, ios::beg);
-    	file.read (memblock, size);
-    	file.close();
-	  	int option_index = 0;
-		char *user_name = NULL;
-		char *in_file_name;
-		char *out_file_name;
-		out_file_name = NULL;
-		while (( option_index = getopt(argc, argv, "i:o:ah")) != -1){
-			switch (option_index) {
-					case 'i':
-					in_file_name = optarg;
-					printf("RGB file name: %s\n", in_file_name);
-					//Codigo del convertidor
-					break;
-				case 'o':
-					out_file_name = optarg;
-					printf("YUV file name: %s\n", out_file_name);
-					break;
-				case 'a':
-					printf("Authors of the program:\n\tLeonardo Araya\n\tGabriel Loria\n\tAlvaro Salazar\n");
-					break;
-				case 'h':
-					printf("Use '-i RGBfile' where RGBfile is the name of the file in RGB format to convert [REQUIRED].\nUse '-o YUVfile' where YUVfile is the name of the output file in YUV format [REQUIRED].\nUse '-a' to display information of the author of the program.\nUse '-h' to display this help guide.\n");
-					break;
-				default:
-					printf("Not recognized option. Please use '-h' for help.\n");
-					return 1;
-			} //end block for switch
-		}  //end block for while
-	
-		streampos size;
-  		char * memblock;
-
-  		ifstream file ("image2.bgr", ios::in|ios::binary|ios::ate);
-  		if (file.is_open())
-		{
-			size = file.tellg();
-    		memblock = new char [size];
-    		file.seekg (0, ios::beg);
-    		file.read (memblock, size);
-    		file.close();
-			rgb2yuv(in_file, out_file_name, *arr);
-    		delete[] memblock;
-		}
-		else cout << "Unable to open file" << endl;
-	
-	printf("End of conversion.\n");
-	
-	clock_t end = clock();	//Fin de contador de tiempo
-	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	printf("Tiempo transcurrido:\t%fs\n", time_spent);
 	return 0;
-} // end main block
+}
+
+// Function that converts a pixel from RGB to YUV format
+int rgb2yuv(char *input_img_name, char *output_img_name){
+	ifstream input;
+	ofstream output;
+	char output_pixels[640*480*3];
+	char input_read[3];
+	char converted_output[3];
+	struct RGB data;
+	struct YUV value;
+	int i = 0;
+	int status = 0;
+
+	input.open(input_img_name, ios::in | ios::binary);
+	output.open(output_img_name, ios::out | ios::binary);
+
+	input.read(input_read, sizeof(input_read));
+
+	while (input.read(input_read, sizeof(input_read))) {
+			// Convert the pixel from RGB to YUV
+			data.R = input_read[0];
+			data.G = input_read[1];
+			data.B = input_read[2];
+			status = pixel_rgb2yuv(data, &value);
+			if (status) {
+				fprintf(stderr, "status :%d\n", status);
+				return status;
+			}
+			converted_output[0]= (char)value.Y;
+			converted_output[1]= (char)value.U;
+			converted_output[2]= (char)value.V;
+
+			memcpy(&output_pixels[i], converted_output, sizeof(converted_output));
+			i = i + 3;
+	}
+
+	input.close();
+	output.write(output_pixels, sizeof(output_pixels));
+	output.close();
+
+	return 0;
+}
+
+// Main code starts here
+int main(int argc, char **argv){
+	char *RGB_file_name;
+	char *YUV_file_name;
+	int status = 0;
+
+	status = menu(argc,argv, &RGB_file_name, &YUV_file_name);
+	if (status) {
+		fprintf(stderr, "status :%d\n", status);
+		return status;
+	}
+
+	// Start the time count
+	clock_t begin = clock();
+
+	// Start the convertion
+	rgb2yuv(RGB_file_name, YUV_file_name);
+
+	// Finish the time count
+	clock_t end = clock();
+	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("Elapsed time: \t%fs\n", time_spent);
+
+  return 0;
+}
