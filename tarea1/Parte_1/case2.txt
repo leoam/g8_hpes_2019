@@ -1,0 +1,7 @@
+Caso 2
+
+En este caso, lo que sucede es que el arreglo a no esta
+siendo completamente inicializado. La ultima posicion del
+arreglo no esta siendo inicializada por el for de la linea
+7. Por lo tanto, los errores que Valgrind reporta consisten
+en que se esta intentando acceder a valores no inicializados.
