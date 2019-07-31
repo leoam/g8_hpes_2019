@@ -15,8 +15,8 @@ int menu( int argc, char **argv, char **in_file){
 		switch (option_index) {
 			case 'p':
 				fprintf(stderr,"Program START: %s\n", optarg);
-        system("gcc -shared -fPIC -o inject.so inject.c -ldl");
-        sprintf(buf, "LD_PRELOAD=$PWD/inject.so %s", optarg);
+        system("gcc -shared -fPIC -o libmemcheck.so libmemcheck.c -ldl");
+        sprintf(buf, "LD_PRELOAD=$PWD/libmemcheck.so %s", optarg);
         system(buf);
 				break;
 			case 'a':
