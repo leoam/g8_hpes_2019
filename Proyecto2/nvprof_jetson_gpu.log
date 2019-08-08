@@ -1,0 +1,39 @@
+==11325== NVPROF is profiling process 11325, command: python3 gpu-opt_flow.py
+==11325== Warning: Unified Memory Profiling is not supported on the underlying platform. System requirements for unified memory can be found at: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-requirements
+==11325== Profiling application: python3 gpu-opt_flow.py
+==11325== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   45.19%  34.8183s      1704  20.433ms  728.70us  85.630ms  cv::cuda::device::optflow_farneback::boxFilter5(int, int, cv::cuda::PtrStep<float>, int, float, cv::cuda::PtrStep<float>)
+                   26.68%  20.5602s      1136  18.099ms  6.6539ms  259.76ms  void cv::cuda::device::optflow_farneback::gaussianBlur<cv::cuda::device::BrdReflect101<float>>(int, int, cv::cuda::PtrStep<float>, int, float, cv::cuda::PtrStep)
+                   13.26%  10.2171s      1704  5.9959ms  216.62us  26.499ms  cv::cuda::device::optflow_farneback::updateMatrices(int, int, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>)
+                    6.51%  5.01334s      1136  4.4131ms  160.68us  38.919ms  void cv::cuda::device::optflow_farneback::polynomialExpansion<int=5>(int, int, cv::cuda::PtrStep<float>, cv::cuda::PtrStep)
+                    2.66%  2.04916s      1704  1.2026ms  56.250us  6.2917ms  cv::cuda::device::optflow_farneback::updateFlow(int, int, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>, cv::cuda::PtrStep<float>)
+                    2.30%  1.77554s       142  12.504ms  8.3687ms  122.31ms  [CUDA memcpy DtoH]
+                    1.56%  1.20388s      1704  706.50us  119.69us  3.8405ms  void cv::cuda::device::resize_linear<float>(cv::cuda::PtrStepSz<float>, float, float, float)
+                    0.51%  393.91ms       284  1.3870ms  1.1491ms  3.2052ms  [CUDA memcpy DtoD]
+                    0.42%  322.90ms       852  378.99us  51.407us  1.0089ms  void cv::cudev::grid_transform_detail::transformSmart<int=4, float, float, _GLOBAL__N__53_tmpxft_00003771_00000000_9_gpu_mat_compute_75_cpp1_ii_71482d89::Convertor<float, float, float>, cv::cudev::WithOutMask>(cv::cudev::GlobPtr<float>, cv::cudev::grid_transform_detail::transformSmart<int=4, float, float, _GLOBAL__N__53_tmpxft_00003771_00000000_9_gpu_mat_compute_75_cpp1_ii_71482d89::Convertor<float, float, float, float>, cv::cudev::WithOutMask>, float, float, int, int)
+                    0.35%  271.23ms       142  1.9101ms  1.8596ms  2.7036ms  void cv::cudev::grid_split_merge_detail::mergeC2<cv::cudev::GlobPtr<int>, cv::cudev::GlobPtr<int>, int2, cv::cudev::WithOutMask>(int, cv::cudev::GlobPtr<int>, cv::cudev::GlobPtr<cv::cudev::GlobPtr<int>>, int2, int, int)
+                    0.29%  225.64ms       284  794.49us  596.93us  4.1756ms  void cv::cudev::grid_transform_detail::transformSmart<int=4, unsigned char, float, cv::cudev::saturate_cast_func<unsigned char, float>, cv::cudev::WithOutMask>(cv::cudev::GlobPtr<unsigned char>, cv::cudev::grid_transform_detail::transformSmart<int=4, unsigned char, float, cv::cudev::saturate_cast_func<unsigned char, float, float>, cv::cudev::WithOutMask>, unsigned char, float, int, int)
+                    0.26%  198.47ms      1988  99.836us     208ns  1.9538ms  [CUDA memcpy HtoD]
+                    0.00%  192.66us       284     678ns     312ns  3.6460us  [CUDA memset]
+      API calls:   40.31%  47.9893s      5538  8.6655ms  25.000us  327.04ms  cudaFree
+                   33.74%  40.1638s      5538  7.2524ms  20.000us  9.36325s  cudaMallocPitch
+                   22.52%  26.8109s      8094  3.3124ms  3.8020us  357.57ms  cudaStreamSynchronize
+                    1.86%  2.21708s       426  5.2044ms  964.11us  124.60ms  cudaMemcpy2D
+                    0.98%  1.16687s     10366  112.57us  33.750us  1.7790ms  cudaLaunchKernel
+                    0.25%  301.16ms       142  2.1208ms  1.8961ms  3.2836ms  cudaDeviceSynchronize
+                    0.20%  232.79ms      1704  136.61us  28.698us  4.8845ms  cudaMemcpyToSymbol
+                    0.05%  56.023ms       710  78.905us  5.9900us  3.8187ms  cudaStreamDestroy
+                    0.02%  26.617ms       284  93.721us  70.313us  200.42us  cudaMemcpy2DAsync
+                    0.02%  22.349ms       284  78.694us  50.052us  243.07us  cudaMemset2DAsync
+                    0.02%  20.222ms      1846  10.954us  3.1250us  173.65us  cudaGetDevice
+                    0.02%  20.161ms     10366  1.9440us     573ns  213.70us  cudaGetLastError
+                    0.01%  8.2566ms       710  11.629us  5.8860us  242.50us  cudaStreamCreate
+                    0.00%  316.57us        96  3.2970us  2.0830us  51.094us  cuDeviceGetAttribute
+                    0.00%  79.688us         1  79.688us  79.688us  79.688us  cudaGetDeviceProperties
+                    0.00%  15.469us         3  5.1560us  3.2290us  6.6150us  cuDeviceGetCount
+                    0.00%  10.938us         1  10.938us  10.938us  10.938us  cuDeviceTotalMem
+                    0.00%  6.5100us         2  3.2550us  2.8120us  3.6980us  cuDeviceGet
+                    0.00%  3.9590us         1  3.9590us  3.9590us  3.9590us  cuDeviceGetName
+                    0.00%  3.0200us         1  3.0200us  3.0200us  3.0200us  cuDeviceGetUuid
+                    0.00%  2.6030us         3     867ns     625ns  1.1450us  cudaGetDeviceCount
